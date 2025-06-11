@@ -1,0 +1,202 @@
+diff --git a/package.json b/package.json
+@@
+   "dependencies": {
+@@
+-    "tailwindcss": "^3.4.4"
++    "tailwindcss": "^3.5.3",
++    "tailwindcss-animate": "^1.0.7",
++    "@tailwindcss/typography": "^0.5.12"
+   },
+   "scripts": {
+@@
+-    "dev": "next dev",
++    "dev": "next dev -p 3000",
+     "build": "next build",
+@@
++    "migrate:tokens": "npx ts-node scripts/codemods/tokens-rewrite.ts"
+   }
+
+diff --git a/tailwind.config.ts b/tailwind.config.ts
+new file mode 100644
+@@
++import type { Config } from 'tailwindcss';
++import animatePlugin from 'tailwindcss-animate';
++import typography from '@tailwindcss/typography';
++
++export const tokens = {
++  radius: { sm: '4px', md: '8px', lg: '16px', full: '9999px' },
++  spacing: ['0', '4px', '8px', '12px', '16px', '24px', '32px', '40px', '56px', '72px'],
++  fontFamily: {
++    heading: ['"Inter"', 'sans-serif'],
++    body: ['"Inter"', 'sans-serif'],
++  },
++  colors: {
++    primary: {
++      50: '#ffe6e6', 100: '#feb3b3', 200: '#fd8080', 300: '#fc4d4d',
++      400: '#fb1a1a', 500: '#e20000', 600: '#b60000',
++      700: '#8a0000', 800: '#5e0000', 900: '#320000',
++    },
++    neutral: {
++      50: '#fafafa', 100: '#f5f5f5', 200: '#e5e5e5', 300: '#d4d4d4',
++      400: '#a3a3a3', 500: '#737373', 600: '#525252',
++      700: '#404040', 800: '#262626', 900: '#171717',
++    },
++    success: '#22c55e',
++    warning: '#facc15',
++    error: '#ef4444',
++  },
++} as const;
++
++const config: Config = {
++  content: [
++    './src/**/*.{ts,tsx,js,jsx,mdx}',
++    './node_modules/@shadcn/ui/**/*.{ts,tsx}',
++  ],
++  theme: {
++    container: { center: true, padding: '1rem' },
++    extend: {
++      borderRadius: tokens.radius,
++      spacing: tokens.spacing,
++      colors: tokens.colors,
++      fontFamily: {
++        heading: tokens.fontFamily.heading,
++        body: tokens.fontFamily.body,
++      },
++      keyframes: {
++        'accordion-down': {
++          from: { height: '0' },
++          to: { height: 'var(--radix-accordion-content-height)' },
++        },
++        'accordion-up': {
++          from: { height: 'var(--radix-accordion-content-height)' },
++          to: { height: '0' },
++        },
++      },
++      animation: {
++        'accordion-down': 'accordion-down 0.2s ease-out',
++        'accordion-up': 'accordion-up 0.2s ease-out',
++      },
++    },
++  },
++  plugins: [typography, animatePlugin],
++};
++
++export default config;
+
+diff --git a/postcss.config.cjs b/postcss.config.cjs
+new file mode 100644
+@@
++module.exports = {
++  plugins: { tailwindcss: {}, autoprefixer: {} },
++};
+
+diff --git a/src/styles/tokens.css b/src/styles/tokens.css
+new file mode 100644
+@@
++/* Design tokens som CSS-variabler */
++
++:root {
++  --radius-sm: 4px;
++  --radius-md: 8px;
++  --radius-lg: 16px;
++  --radius-full: 9999px;
++  --spacing-0: 0;
++  --spacing-1: 4px;
++  --spacing-2: 8px;
++  --spacing-3: 12px;
++  --spacing-4: 16px;
++  --spacing-5: 24px;
++  --spacing-6: 32px;
++  --spacing-7: 40px;
++  --spacing-8: 56px;
++  --spacing-9: 72px;
++  --font-heading: 'Inter', sans-serif;
++  --font-body: 'Inter', sans-serif;
++  /* färger – primär */
++  --color-primary-50: #ffe6e6;
++  --color-primary-100: #feb3b3;
++  --color-primary-200: #fd8080;
++  --color-primary-300: #fc4d4d;
++  --color-primary-400: #fb1a1a;
++  --color-primary-500: #e20000;
++  --color-primary-600: #b60000;
++  --color-primary-700: #8a0000;
++  --color-primary-800: #5e0000;
++  --color-primary-900: #320000;
++  /* färger – neutral */
++  --color-neutral-50: #fafafa;
++  --color-neutral-100: #f5f5f5;
++  --color-neutral-200: #e5e5e5;
++  --color-neutral-300: #d4d4d4;
++  --color-neutral-400: #a3a3a3;
++  --color-neutral-500: #737373;
++  --color-neutral-600: #525252;
++  --color-neutral-700: #404040;
++  --color-neutral-800: #262626;
++  --color-neutral-900: #171717;
++  --color-success: #22c55e;
++  --color-warning: #facc15;
++  --color-error: #ef4444;
++}
++
++[data-theme='dark'] {
++  --color-neutral-50: #171717;
++  --color-neutral-100: #262626;
++  --color-neutral-200: #404040;
++  --color-neutral-300: #525252;
++  --color-neutral-400: #737373;
++  --color-neutral-500: #a3a3a3;
++  --color-neutral-600: #d4d4d4;
++  --color-neutral-700: #e5e5e5;
++  --color-neutral-800: #f5f5f5;
++  --color-neutral-900: #fafafa;
++}
+
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+@@
+-import './globals.css';
++import '../styles/tokens.css';
++import './globals.css';
+
+diff --git a/scripts/codemods/tokens-rewrite.ts b/scripts/codemods/tokens-rewrite.ts
+new file mode 100644
+@@
++/* eslint-disable no-console */
++/**
++ * Enkel codemod som mappar gamla Tailwind-klasser till nya token‐skalor.
++ * Kör:  pnpm migrate:tokens
++ */
++import fs from 'node:fs/promises';
++import path from 'node:path';
++
++async function walk(dir: string, cb: (f: string) => Promise<void>) {
++  const ents = await fs.readdir(dir, { withFileTypes: true });
++  await Promise.all(
++    ents.map((e) => {
++      const p = path.resolve(dir, e.name);
++      return e.isDirectory() ? walk(p, cb) : cb(p);
++    }),
++  );
++}
++
++const classMap: Record<string, string> = {
++  'rounded-md': 'rounded-lg',
++  'rounded': 'rounded-md',
++  'p-2': 'p-3',
++  'p-3': 'p-4',
++  'gap-2': 'gap-3',
++};
++
++async function transform(file: string) {
++  if (!file.match(/\.(ts|tsx|jsx|js)$/)) return;
++  let code = await fs.readFile(file, 'utf-8');
++  Object.entries(classMap).forEach(([from, to]) => {
++    code = code.replaceAll(from, to);
++  });
++  await fs.writeFile(file, code);
++}
++
++(async () => {
++  await walk('src', transform);
++  console.log('✓ tokens-codemod klar');
++})(); 

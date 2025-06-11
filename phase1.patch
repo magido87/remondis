@@ -1,0 +1,24 @@
+/** @type {import("eslint").Linter.Config} */
+module.exports = {
+  root: true,
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint', 'import', 'react', 'react-hooks', 'jsx-a11y'],
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:react/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:jsx-a11y/recommended',
+    'airbnb',
+    'airbnb-typescript',
+    'prettier',
+  ],
+  parserOptions: { project: './tsconfig.json' },
+  settings: { react: { version: 'detect' } },
+  rules: {
+    'react/react-in-jsx-scope': 'off',
+    'import/prefer-default-export': 'off',
+    '@typescript-eslint/no-explicit-any': 'error',
+    'react/jsx-props-no-spreading': 'off',
+  },
+}; 
